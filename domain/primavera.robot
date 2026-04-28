@@ -12,8 +12,7 @@ Library    dotenv
 Library    ..${/}adapter${/}Library${/}InitAllSettingsSQL.py
 Library    ..${/}adapter${/}Resources${/}Config.py
 
-Library    ../adapter/DB_helper.py
-Library    ../adapter/helper_file.py
+Library    ..${/}adapter${/}Helper.py
 Resource    ..${/}data${/}locator.resource
 
 *** Variables ***
@@ -72,11 +71,8 @@ Launch Citrix
     Click Element                    xpath=//div[normalize-space()="Open"]
 
 Open Latest ICA File
-   
-    Open Latest Ica
-    
 
-  
+    Open Latest Ica
 
 Launching Primavera Application
     Wait For Element        image:${primavera}           timeout=600
@@ -117,10 +113,23 @@ Process Records
     FOR    ${row}    IN    @{PROCESS_QUEUE}
             Log To Console    Processing record: Layout=${row['Layout']}, Report=${row['Report_Name']}
 
-            IF    not $row['Layout'] or not $row['Report_Name'] or not $row['Storage_Location']
-                Log To Console    Skipping row due to missing Layout, Report_Name or Storage_Location
-                ${row['Log_Message']}=    Set Variable    Missing critical data
-                ${row['Reports']}=    Set Variable    Failed
+
+            IF    not $row['Layout']
+                Log To Console       Skipping row due to missing Layout
+                Set To Dictionary    ${row}    Log_Message    Field Layout is empty
+                Set To Dictionary    ${row}    Reports    0
+                CONTINUE
+            END
+            IF    not $row['Report_Name']
+                Log To Console       Skipping row due to missing Report_Name
+                Set To Dictionary    ${row}    Log_Message    Field Report_Name is empty
+                Set To Dictionary    ${row}    Reports    0
+                CONTINUE
+            END
+            IF    not $row['Storage_Location']
+                Log To Console       Skipping row due to missing Storage_Location
+                Set To Dictionary    ${row}    Log_Message    Field Storage_Location is empty
+                Set To Dictionary    ${row}    Reports    0
                 CONTINUE
             END
 
@@ -191,6 +200,8 @@ Process Records
 
         ${activities_found}=      Run Keyword And Return Status    Wait For Element    image:${activities}    timeout=100
         IF    not ${activities_found}
+
+            Set To Dictionary    ${row}    Log_Message    Error opening project selection
             Continue For Loop
         END
 
@@ -239,7 +250,8 @@ Process Records
             RPA.Desktop.Press Keys    ctrl    c
             ${copied_text}=    Evaluate    pyperclip.paste()    modules=pyperclip
             
-            IF    '${copied_text.strip()}' == '${row}[Report_Name].strip()'
+            ${match}=    Evaluate    $copied_text.strip() == $row['Report_Name'].strip()
+            IF    ${match}
                 ${found_exact}=    Set Variable    True
                 BREAK
             ELSE
@@ -271,6 +283,16 @@ Process Records
             Log To Console      Error popup closed, skipped to next row.
             Continue For Loop
         END
+
+        # Wait For Element        image:${field_delimiter_field}    timeout=10
+        # Click                   image:${field_delimiter_field}
+        # RPA.Desktop.Press Keys  ctrl    a
+        # RPA.Desktop.Type Text   ${row}[Field_Delimiter]
+
+        # Wait For Element        image:${text_qualifier_field}     timeout=10
+        # Click                   image:${text_qualifier_field}
+        # RPA.Desktop.Press Keys  ctrl    a
+        # RPA.Desktop.Type Text   ${row}[Text_Qualifier]
 
         ${output_1_exists}=    Run Keyword And Return Status    Wait For Element    image:${output_file}    timeout=5
         
@@ -340,7 +362,7 @@ Process Records
         END
     END
 
-    ${log_path}=    Generate Final Log File    ${PROCESS_QUEUE}    ${DOWNLOAD_DIR}
+    ${log_path}=    Generate Final Log File    ${PROCESS_QUEUE}    ${primary_config['PathToSave_ReportFiles']}
     Log To Console  Processing completed. Master log saved to: ${log_path}
 
 Send Email Final Report
