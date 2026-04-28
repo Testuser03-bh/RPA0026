@@ -1,0 +1,10 @@
+.venv
+.env
+log.html
+adapters/__pycache__
+adapters/Resources/__pycache__
+adapters/Library/__pycache__
+adapters/Framework/__pycache__
+output.xml
+report.html
+/Script1.vbs
