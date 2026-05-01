@@ -17,46 +17,51 @@ DB_CONFIG = {
 
 def open_latest_ica(timeout=60, poll_interval=2, max_age_seconds=180):
     """
-    Waits for a NEW ICA file in Downloads.
+    Deletes any pre-existing ICA files in Downloads before waiting for a NEW one.
     Discards files older than max_age_seconds (default 3 minutes).
-    Opens the newest valid ICA file immediately.
+    Opens the newest valid ICA file immediately once detected.
     """
-
-    logger.console("Waiting for new ICA file in Downloads...")
-
     downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+
+    # Step 1: Delete any ICA files that already exist before the robot triggered the download.
+    existing_ica_files = [
+        os.path.join(downloads, f)
+        for f in os.listdir(downloads)
+        if f.lower().endswith(".ica")
+    ]
+    if existing_ica_files:
+        for file in existing_ica_files:
+            try:
+                os.remove(file)
+                logger.console(f"Deleted pre-existing ICA file: {os.path.basename(file)}")
+            except Exception as e:
+                logger.error(f"Failed to delete pre-existing ICA file {os.path.basename(file)}: {e}")
+    else:
+        logger.console("No pre-existing ICA files found. Proceeding normally.")
+
+    # Step 2: Wait for the newly downloaded ICA file and open it.
+    logger.console("Waiting for new ICA file in Downloads...")
     start_time = time.time()
-
     while time.time() - start_time < timeout:
-
         now = time.time()
-
         ica_files = [
             os.path.join(downloads, f)
             for f in os.listdir(downloads)
             if f.lower().endswith(".ica")
         ]
-
         valid_files = []
-
         for file in ica_files:
             file_age = now - os.path.getctime(file)
-
-            # Keep only files newer than 3 minutes
             if file_age <= max_age_seconds:
                 valid_files.append(file)
-
         if valid_files:
             latest_file = max(valid_files, key=os.path.getctime)
-
             logger.console(
                 f"Opening ICA file: {os.path.basename(latest_file)} "
                 f"(age: {int(now - os.path.getctime(latest_file))} sec)"
             )
-
             os.startfile(latest_file)
             return True
-
         time.sleep(poll_interval)
 
     logger.error("Timeout: No new ICA file detected within allowed age.")

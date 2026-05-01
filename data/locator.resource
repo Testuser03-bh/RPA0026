@@ -48,3 +48,7 @@ ${yes}                  ${EXECDIR}${/}data${/}images${/}yes.png
 ${output_file_2}        ${EXECDIR}${/}data${/}images${/}output_file_2.png
 ${error}    ${EXECDIR}${/}data${/}images${/}error.png
 ${error_ok}    ${EXECDIR}${/}data${/}images${/}error_ok.png
+${delimited_text}    ${EXECDIR}${/}data${/}images${/}delimited_text.png
+${delimited_text_clicked}    ${EXECDIR}${/}data${/}images${/}delimited_text_clicked.png
+${field_delimiter_field}    ${EXECDIR}${/}data${/}images${/}field_delimiter_field.png
+${text_qualifier_field}    ${EXECDIR}${/}data${/}images${/}text_qualifier_field.png
